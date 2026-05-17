@@ -1,0 +1,10 @@
+# Credentials
+.env
+
+# Dependencies
+node_modules/
+
+# IDEs and System Files
+.idea/
+.DS_Store
+*.log
