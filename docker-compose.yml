@@ -1,0 +1,32 @@
+# Docker Compose skeleton for running the four required processes.
+# Fill in build commands and environment files when implementation starts.
+
+services:
+  admin-logs-service:
+    build: ./admin-logs-service
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./admin-logs-service/.env
+
+  users-service:
+    build: ./users-service
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./users-service/.env
+
+  costs-service:
+    build: ./costs-service
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./costs-service/.env
+
+  about-service:
+    build: ./about-service
+    ports:
+      - "3004:3004"
+    env_file:
+      - ./about-service/.env
+

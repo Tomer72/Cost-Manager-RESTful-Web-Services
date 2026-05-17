@@ -1,0 +1,25 @@
+{
+  "name": "admin-logs-service",
+  "version": "1.0.0",
+  "description": "Admin logs service for the Cost Manager final project.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.0.0"
+  }
+}
+
