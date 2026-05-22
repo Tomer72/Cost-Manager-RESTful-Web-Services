@@ -1,3 +1,2 @@
-// Placeholder only.
-// Add users-service endpoint tests here.
+test.todo('implement users tests');
 

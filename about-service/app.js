@@ -37,3 +37,5 @@ app.get('/api/about', (req, res) => {
 app.listen(PORT, () => {
   logger.info(`${process.env.SERVICE_NAME} is running on port ${PORT}`);
 });
+
+module.exports = app;
