@@ -1,0 +1,15 @@
+{
+  "name": "cost-manager-tests",
+  "version": "1.0.0",
+  "description": "Unit tests for the Cost Manager RESTful Web Services.",
+  "scripts": {
+    "test": "jest --verbose --forceExit",
+    "test:about": "jest about.test.js --verbose --forceExit",
+    "test:logs": "jest logs.test.js --verbose --forceExit",
+    "test:users": "jest users.test.js --verbose --forceExit",
+    "test:costs": "jest costs.test.js --verbose --forceExit"
+  },
+  "dependencies": {
+    "jest": "^29.7.0"
+  }
+}
