@@ -1,7 +1,10 @@
-# Docker Compose skeleton for running the four required processes.
-# Fill in build commands and environment files when implementation starts.
+# Docker Compose configuration for running all four microservices together.
+# Each service is built from its own Dockerfile and runs on a separate port.
+# Environment variables are loaded from each service's .env file.
 
 services:
+
+  # Handles GET /api/logs - returns all request logs from MongoDB
   admin-logs-service:
     build: ./admin-logs-service
     ports:
@@ -9,6 +12,7 @@ services:
     env_file:
       - ./admin-logs-service/.env
 
+  # Handles user-related endpoints: POST /api/add, GET /api/users, GET /api/users/:id
   users-service:
     build: ./users-service
     ports:
@@ -16,6 +20,7 @@ services:
     env_file:
       - ./users-service/.env
 
+  # Handles cost-related endpoints: POST /api/add, GET /api/report
   costs-service:
     build: ./costs-service
     ports:
@@ -23,10 +28,10 @@ services:
     env_file:
       - ./costs-service/.env
 
+  # Handles GET /api/about - returns team member details
   about-service:
     build: ./about-service
     ports:
       - "3004:3004"
     env_file:
       - ./about-service/.env
-
