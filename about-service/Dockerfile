@@ -4,7 +4,7 @@ FROM node:22-alpine
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy package files and install dependencies first (leverages Docker layer cache)
+# Copy package files and install dependencies first 
 COPY package*.json ./
 RUN npm install
 
