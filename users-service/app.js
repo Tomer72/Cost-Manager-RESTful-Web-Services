@@ -33,6 +33,23 @@ app.post('/api/add', async (req, res) => {
     try {
         const { id, first_name, last_name, birthday} = req.body;
         
+        // Validate required fields
+        if (!id || !first_name || !last_name || !birthday) {
+            return res.status(400).json({ 
+                message: 'Invalid input', 
+                error: 'The following fields are required: id, first_name, last_name, birthday.' 
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ id: id });
+        if (existingUser) {
+            return res.status(409).json({ 
+                message: 'User already exists', 
+                error: `A user with id ${id} is already registered.` 
+            });
+        }
+
         // Create a new user document
         const newUser = new User({
             id,
@@ -65,17 +82,31 @@ app.get('/api/users/:id', async (req, res) => {
         const user = await User.findOne({ id: id });
         
         if (!user) {
-            return res.status(404).send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
+
+        // Calculate the total sum of costs for this user
+        const costs = await Cost.find({ user_id: id });
+        const total = costs.reduce((acc, cost) => acc + cost.sum, 0);
         
-        res.send(user);
+        // Return exactly the requested fields
+        res.status(200).json({
+            first_name: user.first_name,
+            last_name: user.last_name,
+            id: user.id,
+            total: total
+        });
     } catch (err) {
-        res.status(500).send({ message: 'Error retrieving user', error: err.message });
+        res.status(500).json({ message: 'Error retrieving user details', error: err.message });
     }
 });
 
 
 // Start the server and listen for connections
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
