@@ -14,7 +14,15 @@ const Log = require("./models/log.model");
 const app = express();
 const PORT = process.env.PORT || 3003;
 const SERVICE_NAME = process.env.SERVICE_NAME || "costs-service";
-const allowedCategories = ["food", "health", "housing", "sport", "education"];
+const allowedCategories = ["food", "health", "housing", "sports", "education"];
+
+// Create the error format required by the final project document.
+function createError(message) {
+  return {
+    id: Date.now(),
+    message
+  };
+}
 
 // Connect to MongoDB using the shared database helper.
 connectDB();
@@ -54,24 +62,24 @@ app.post("/api/add", async (req, res) => {
 
     // Validate required fields before trying to save anything to MongoDB.
     if (!description || !category || !userid || sum === undefined) {
-      return res.status(400).json({ error: "missing required fields" });
+      return res.status(400).json(createError("missing required fields"));
     }
 
-    // Validate that the category is one of the categories allowed by the project.
+    // Validate that the category is one of the project categories.
     if (!allowedCategories.includes(category)) {
-      return res.status(400).json({ error: "invalid category" });
+      return res.status(400).json(createError("invalid category"));
     }
 
     // Validate that the sum is a positive number.
     if (typeof sum !== "number" || sum <= 0) {
-      return res.status(400).json({ error: "sum must be a positive number" });
+      return res.status(400).json(createError("sum must be a positive number"));
     }
 
-    // Validate that the selected date is not in the past.
+    // Validate that the selected date is valid and not in the past.
     const costDate = date ? new Date(date) : new Date();
 
     if (Number.isNaN(costDate.getTime())) {
-      return res.status(400).json({ error: "invalid date" });
+      return res.status(400).json(createError("invalid date"));
     }
 
     const today = new Date();
@@ -80,17 +88,17 @@ app.post("/api/add", async (req, res) => {
     costDate.setHours(0, 0, 0, 0);
 
     if (costDate < today) {
-      return res.status(400).json({ error: "date cannot be in the past" });
+      return res.status(400).json(createError("date cannot be in the past"));
     }
 
     // Verify that the user exists before adding a cost for that userid.
     const user = await User.findOne({ id: Number(userid) });
 
     if (!user) {
-      return res.status(404).json({ error: "user not found" });
+      return res.status(404).json(createError("user not found"));
     }
 
-    // Create and save the new cost document.
+    // Create and save a cost using the property names required by the document.
     const cost = new Cost({
       description,
       category,
@@ -104,25 +112,45 @@ app.post("/api/add", async (req, res) => {
     return res.status(201).json(cost);
   } catch (err) {
     req.log.error(err, "failed to add cost");
-    return res.status(500).json({ error: "server error" });
+    return res.status(500).json(createError("server error"));
   }
 });
 
-// Build the empty monthly report structure required by the assignment.
-function createEmptyReport() {
+// Build an internal category map before converting it to the required array.
+function createEmptyReportMap() {
   return {
     food: [],
+    education: [],
     health: [],
     housing: [],
-    sport: [],
-    education: []
+    sports: []
   };
 }
 
-// Check if the requested report is for a month that already ended.
+// Convert grouped costs to the exact report shape shown in the requirements.
+function createReportCostsArray(reportMap) {
+  return [
+    { food: reportMap.food },
+    { education: reportMap.education },
+    { health: reportMap.health },
+    { housing: reportMap.housing },
+    { sports: reportMap.sports }
+  ];
+}
+
+// Normalize old local test data that used "sport" before the final document clarified "sports".
+function normalizeCategory(category) {
+  return category === "sport" ? "sports" : category;
+}
+
+/*
+  Computed Design Pattern:
+  Reports for months that already passed are saved in the reports collection.
+  When the same past report is requested again, the saved report is returned.
+*/
 function isPastMonth(year, month) {
   const now = new Date();
-  const requestedMonth = new Date(Number(year), Number(month), 1);
+  const requestedMonth = new Date(Number(year), Number(month) - 1, 1);
   const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   return requestedMonth < currentMonth;
@@ -135,7 +163,7 @@ app.get("/api/report", async (req, res) => {
 
     // Validate that all required query parameters were sent.
     if (!id || !year || !month) {
-      return res.status(400).json({ error: "missing required query parameters" });
+      return res.status(400).json(createError("missing required query parameters"));
     }
 
     const numericId = Number(id);
@@ -148,12 +176,12 @@ app.get("/api/report", async (req, res) => {
       Number.isNaN(numericYear) ||
       Number.isNaN(numericMonth)
     ) {
-      return res.status(400).json({ error: "id, year, and month must be numbers" });
+      return res.status(400).json(createError("id, year, and month must be numbers"));
     }
 
     // Validate month range so the date calculation is reliable.
     if (numericMonth < 1 || numericMonth > 12) {
-      return res.status(400).json({ error: "month must be between 1 and 12" });
+      return res.status(400).json(createError("month must be between 1 and 12"));
     }
 
     // For past months, return the cached report if it already exists.
@@ -164,7 +192,7 @@ app.get("/api/report", async (req, res) => {
         month: numericMonth
       });
 
-      if (cachedReport) {
+      if (cachedReport && Array.isArray(cachedReport.report.costs)) {
         return res.json(cachedReport.report);
       }
     }
@@ -182,10 +210,16 @@ app.get("/api/report", async (req, res) => {
     });
 
     // Group each cost into the matching category array.
-    const report = createEmptyReport();
+    const reportMap = createEmptyReportMap();
 
     for (const cost of costs) {
-      report[cost.category].push({
+      const category = normalizeCategory(cost.category);
+
+      if (!reportMap[category]) {
+        continue;
+      }
+
+      reportMap[category].push({
         sum: cost.sum,
         description: cost.description,
         day: cost.date.getDate()
@@ -196,7 +230,7 @@ app.get("/api/report", async (req, res) => {
       userid: numericId,
       year: numericYear,
       month: numericMonth,
-      costs: report
+      costs: createReportCostsArray(reportMap)
     };
 
     // Save reports for past months so future requests can reuse the result.
@@ -211,11 +245,16 @@ app.get("/api/report", async (req, res) => {
     return res.json(response);
   } catch (err) {
     req.log.error(err, "failed to create report");
-    return res.status(500).json({ error: "server error" });
+    return res.status(500).json(createError("server error"));
   }
 });
 
-// Start the server only after the routes and middleware are defined.
-app.listen(PORT, () => {
-  console.log(`${SERVICE_NAME} is running on port ${PORT}`);
-});
+// Start the server only when this file is executed directly.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`${SERVICE_NAME} is running on port ${PORT}`);
+  });
+}
+
+// Export the app so unit tests can call the endpoints with Supertest.
+module.exports = app;

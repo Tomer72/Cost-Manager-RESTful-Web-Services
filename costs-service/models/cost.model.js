@@ -12,7 +12,7 @@ const costSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ["food", "health", "housing", "sport", "education"]
+    enum: ["food", "health", "housing", "sports", "education"]
   },
 
   // userid connects the cost to a user from the users collection.
