@@ -1,50 +1,57 @@
-# Cost Manager Final Project
+# Cost Manager RESTful Web Services
 
-Basic repository structure for the Node.js final project.
+Final project for the Asynchronous Server-Side Development course.
 
-The project uses four separate services because the course requires four separate processes:
+The project is built as four separate Node.js microservices, each running as an independent process on a different port.
 
-```text
-admin-logs-service -> GET /api/logs
-users-service      -> POST /api/add, GET /api/users, GET /api/users/:id
-costs-service      -> POST /api/add, GET /api/report
-about-service      -> GET /api/about
+## Services
+
+| Service | Port | Endpoints |
+|---|---|---|
+| admin-logs-service | 3001 | `GET /api/logs` |
+| users-service | 3002 | `POST /api/add`, `GET /api/users`, `GET /api/users/:id` |
+| costs-service | 3003 | `POST /api/add`, `GET /api/report` |
+| about-service | 3004 | `GET /api/about` |
+
+## Stack
+
+- Node.js + Express.js
+- MongoDB Atlas + Mongoose
+- Pino + pino-http (request logging)
+- dotenv
+- Jest + Supertest (unit tests)
+- Docker + Docker Compose
+
+## Running Locally
+
+```bash
+docker compose up --build
 ```
 
-Keep the implementation simple. Each service can put its route logic directly in `app.js`.
-
-## Required Stack
+Each service requires a `.env` file with:
 
 ```text
-Node.js
-Express.js
-JavaScript
-MongoDB Atlas
-Mongoose
-Pino
-dotenv
-Jest
-Supertest
-Docker
-Docker Compose
+PORT
+MONGODB_URI
+SERVICE_NAME
 ```
 
-Each service has a real `.env` file because the project requires using dotenv.
-Before running the project, replace the placeholder `MONGODB_URI` with the MongoDB Atlas connection string.
-
-Each service also has `pino` and `pino-http` dependencies. Every service should log incoming requests into the shared `logs` collection.
-
-## Main Planning File
-
-See [TASKS.md](/Users/tomerdahan/Desktop/final-project/TASKS.md).
-
-## EC2 Ports
+The `about-service` also requires team member names:
 
 ```text
-3001 -> admin logs
-3002 -> users
-3003 -> costs
-3004 -> about
+TEAM_MEMBER_1_FIRST_NAME
+TEAM_MEMBER_1_LAST_NAME
+TEAM_MEMBER_2_FIRST_NAME
+TEAM_MEMBER_2_LAST_NAME
+TEAM_MEMBER_3_FIRST_NAME
+TEAM_MEMBER_3_LAST_NAME
+```
+
+## Running Tests
+
+```bash
+cd tests
+npm test
 ```
 
 ## Submission Database State

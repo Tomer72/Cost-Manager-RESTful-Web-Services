@@ -1,46 +1,30 @@
-# Unit Tests Plan
+# Tests
 
-Use this folder for endpoint tests.
+Unit tests for all four services using Jest and the native `fetch` API.
 
-Recommended stack:
+## Running
 
-- Jest
-- Supertest
+```bash
+npm test
+```
 
-## About Service Tests
+Services must be running locally (via `docker compose up`) before running the tests.
 
-- `GET /api/about` returns status 200.
-- Response is an array.
-- Each item includes only `first_name` and `last_name`.
+## Test Files
 
-## Users Service Tests
+| File | Service |
+|---|---|
+| `about.test.js` | about-service (port 3004) |
+| `logs.test.js` | admin-logs-service (port 3001) |
+| `users.test.js` | users-service (port 3002) |
+| `costs.test.js` | costs-service (port 3003) |
 
-- `POST /api/add` creates a valid user.
-- `POST /api/add` rejects missing fields.
-- `POST /api/add` rejects duplicate `id`.
-- `GET /api/users` returns an array.
-- `GET /api/users/:id` returns user details.
-- `GET /api/users/:id` includes `total`.
-- `GET /api/users/:id` returns error JSON for an unknown user.
+## Coverage
 
-## Costs Service Tests
-
-- `POST /api/add` creates a valid cost.
-- `POST /api/add` rejects invalid category.
-- `POST /api/add` rejects missing fields.
-- `POST /api/add` rejects non-existing `userid`.
-- `POST /api/add` rejects past date.
-- `POST /api/add` uses current date if date is missing.
-- `GET /api/report` returns grouped categories.
-- `GET /api/report` includes empty categories.
-- `GET /api/report` returns `sum`, `description`, and `day`.
-- `GET /api/report` returns error JSON for invalid query params.
-- Past-month report is saved and reused.
-
-## Logs Service Tests
-
-- Calling any endpoint creates a log.
-- `GET /api/logs` returns an array.
-- Logs include useful fields such as method, URL, message, and date.
-- Errors are also logged.
-
+- `GET /api/about` — returns 200, array, only first_name and last_name
+- `GET /api/logs` — returns 200, array, correct fields, new log created per request
+- `POST /api/add` (users) — valid user, duplicate user, missing fields
+- `GET /api/users` — returns array
+- `GET /api/users/:id` — returns user with total, unknown user error
+- `POST /api/add` (costs) — valid cost, invalid category, missing fields, non-existing user, past date
+- `GET /api/report` — grouped categories, empty categories, sum/description/day fields, invalid params, computed pattern cache

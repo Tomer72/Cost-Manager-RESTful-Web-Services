@@ -1,18 +1,37 @@
 # About Service
 
-Basic service for:
+Runs on port **3004**.
 
-```text
+## Endpoint
+
+```
 GET /api/about
 ```
 
-Put the endpoint directly in `app.js`.
+Returns a JSON array of team members with only `first_name` and `last_name`.
+Names are loaded from `.env` and are not stored in the database.
 
-Return only:
+## Environment Variables
 
-- `first_name`
-- `last_name`
+```text
+PORT=3004
+MONGODB_URI=<your MongoDB Atlas connection string>
+SERVICE_NAME=about-service
+TEAM_MEMBER_1_FIRST_NAME=
+TEAM_MEMBER_1_LAST_NAME=
+TEAM_MEMBER_2_FIRST_NAME=
+TEAM_MEMBER_2_LAST_NAME=
+TEAM_MEMBER_3_FIRST_NAME=
+TEAM_MEMBER_3_LAST_NAME=
+```
 
-Do not store this data in MongoDB.
+## Notes
 
-This service still needs MongoDB access for logs only, because every process should save request logs.
+- Connects to MongoDB only to write request logs to the shared `logs` collection.
+- Does not store team member data in the database.
+
+## Running
+
+```bash
+npm start
+```

@@ -1,11 +1,35 @@
 # Admin Logs Service
 
-Basic service for:
+Runs on port **3001**.
 
-```text
+## Endpoint
+
+```
 GET /api/logs
 ```
 
-Put the endpoint directly in `app.js`.
+Returns a JSON array of all request logs saved to the shared `logs` collection in MongoDB, sorted newest first.
 
-Use `models/log.model.js` for the Mongoose model.
+Each log entry includes:
+
+```text
+method     - HTTP verb (GET, POST, etc.)
+url        - request path
+status     - HTTP response status code
+service    - name of the service that wrote the log
+timestamp  - date and time of the request
+```
+
+## Environment Variables
+
+```text
+PORT=3001
+MONGODB_URI=<your MongoDB Atlas connection string>
+SERVICE_NAME=admin-logs-service
+```
+
+## Running
+
+```bash
+npm start
+```
