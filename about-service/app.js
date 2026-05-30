@@ -44,10 +44,12 @@ app.get('/api/about', (req, res) => {
     }
 });
 
-// Start the server on the configured port
-app.listen(PORT, () => {
-  logger.info(`${process.env.SERVICE_NAME} is running on port ${PORT}`);
-});
+// Start the server only when this file is executed directly, not during tests
+if (require.main === module) {
+    app.listen(PORT, () => {
+        logger.info(`${process.env.SERVICE_NAME} is running on port ${PORT}`);
+    });
+}
 
 // Export app for use in unit tests
 module.exports = app;

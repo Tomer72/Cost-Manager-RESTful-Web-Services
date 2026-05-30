@@ -1,112 +1,131 @@
-// Import required modules
+// Load environment variables from .env file
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
+const pinoHttp = require('pino-http');
 const connectDB = require('./config/db');
 
 const User = require('./models/user.model');
 const Cost = require('./models/cost.model');
 const Log = require('./models/log.model');
 
-// Initialize the Express application
+// Initialize the Express application and shared constants
 const app = express();
-// Port configuration
 const PORT = process.env.PORT || 3002;
+const SERVICE_NAME = process.env.SERVICE_NAME || 'users-service';
 
-// Connect to Database
+// Connect to MongoDB Atlas
 connectDB();
 
-// Middleware to parse incoming JSON requests
+// Enable JSON body parsing, CORS, and Pino HTTP logging
 app.use(express.json());
+app.use(cors());
+app.use(pinoHttp());
 
-// Basic route to test if the server is running
-app.get('/', (req, res) => {
-    res.send('Welcome to the Users Service API');
+/*
+  Log middleware: saves a log document to MongoDB after every HTTP response.
+  Uses res.on('finish') so the status code is already set when we save.
+*/
+app.use((req, res, next) => {
+    res.on('finish', async () => {
+        try {
+            // Save method, url, status, and service name to the shared logs collection
+            await Log.create({
+                method: req.method,
+                url: req.originalUrl,
+                status: res.statusCode,
+                service: SERVICE_NAME
+            });
+        } catch (err) {
+            console.error('Failed to save log to MongoDB:', err.message);
+        }
+    });
+    next();
 });
 
-// Health check endpoint
+// Health check endpoint to verify the service is running
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', service: process.env.SERVICE_NAME });
+    res.status(200).json({ status: 'OK', service: SERVICE_NAME });
 });
 
-// Route to handle POST requests for adding a new user
+// Add a new user after validating input and checking for duplicates
 app.post('/api/add', async (req, res) => {
     try {
-        const { id, first_name, last_name, birthday} = req.body;
-        
-        // Validate required fields
+        const { id, first_name, last_name, birthday } = req.body;
+
+        // Validate that all required fields are present
         if (!id || !first_name || !last_name || !birthday) {
-            return res.status(400).json({ 
-                message: 'Invalid input', 
-                error: 'The following fields are required: id, first_name, last_name, birthday.' 
+            return res.status(400).json({
+                id: Date.now(),
+                message: 'The following fields are required: id, first_name, last_name, birthday.'
             });
         }
 
-        // Check if user already exists
+        // Reject the request if a user with this id already exists
         const existingUser = await User.findOne({ id: id });
         if (existingUser) {
-            return res.status(409).json({ 
-                message: 'User already exists', 
-                error: `A user with id ${id} is already registered.` 
+            return res.status(409).json({
+                id: Date.now(),
+                message: `A user with id ${id} is already registered.`
             });
         }
 
-        // Create a new user document
-        const newUser = new User({
-            id,
-            first_name,
-            last_name,
-            birthday
-        });
-
+        // Create and save the new user document
+        const newUser = new User({ id, first_name, last_name, birthday });
         const savedUser = await newUser.save();
-        res.status(201).send(savedUser);
+
+        return res.status(201).json(savedUser);
     } catch (err) {
-        res.status(400).send({ message: 'Error adding user', error: err.message });
+        // Return error details using the required id + message format
+        return res.status(400).json({ id: Date.now(), message: err.message });
     }
 });
 
-// Route to handle GET requests for retrieving all users
+// Return all users from the users collection
 app.get('/api/users', async (req, res) => {
     try {
+        // Fetch every user document from MongoDB
         const users = await User.find();
-        res.send(users);
+        return res.status(200).json(users);
     } catch (err) {
-        res.status(500).send({ message: 'Error retrieving users', error: err.message });
+        return res.status(500).json({ id: Date.now(), message: err.message });
     }
 });
 
-// Route to handle GET requests for a specific user by ID
+// Return a specific user by id, including their total costs
 app.get('/api/users/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
+
+        // Look up the user by the numeric id field (not _id)
         const user = await User.findOne({ id: id });
-        
+
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ id: Date.now(), message: 'User not found' });
         }
 
-        // Calculate the total sum of costs for this user
-        const costs = await Cost.find({ user_id: id });
+        // Sum all costs for this user from the costs collection
+        const costs = await Cost.find({ userid: id });
         const total = costs.reduce((acc, cost) => acc + cost.sum, 0);
-        
-        // Return exactly the requested fields
-        res.status(200).json({
+
+        // Return exactly the fields required by the project document
+        return res.status(200).json({
             first_name: user.first_name,
             last_name: user.last_name,
             id: user.id,
             total: total
         });
     } catch (err) {
-        res.status(500).json({ message: 'Error retrieving user details', error: err.message });
+        return res.status(500).json({ id: Date.now(), message: err.message });
     }
 });
 
-
-// Start the server and listen for connections
-if (process.env.NODE_ENV !== 'test') {
+// Start the server only when this file is run directly, not during tests
+if (require.main === module) {
     app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
+        console.log(`${SERVICE_NAME} is running on port ${PORT}`);
     });
 }
 
+// Export app so unit tests can call endpoints directly
 module.exports = app;

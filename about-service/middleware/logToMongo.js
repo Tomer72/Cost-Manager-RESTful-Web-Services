@@ -12,7 +12,7 @@ module.exports = (req, res, next) => {
         try {
             await Log.create({
                 method: req.method,
-                url: req.url,
+                url: req.originalUrl,
                 status: res.statusCode,
                 service: process.env.SERVICE_NAME,
             });
